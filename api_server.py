@@ -148,5 +148,25 @@ if __name__ == '__main__':
     print("\n⚠️  Note: If using port forwarding, access via forwarded port")
     print("=" * 60)
     
+    # Check if port is already in use
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((API_HOST, API_PORT))
+    sock.close()
+    
+    if result == 0:
+        print(f"\n❌ ERROR: Port {API_PORT} is already in use!")
+        print("💡 Solutions:")
+        print("   1. Kill the process using port 5000:")
+        print("      lsof -ti:5000 | xargs kill -9")
+        print("      # Or")
+        print("      fuser -k 5000/tcp")
+        print("   2. Or use a different port by setting API_PORT in the script")
+        print("\n🔍 To find what's using the port:")
+        print("   lsof -i:5000")
+        print("   # Or")
+        print("   netstat -tuln | grep 5000")
+        exit(1)
+    
     app.run(host=API_HOST, port=API_PORT, threaded=True)
 
