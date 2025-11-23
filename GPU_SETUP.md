@@ -206,15 +206,18 @@ Update the "Current GPU Configuration" section above with:
 
 ### Test from Local Machine
 
+**Using Tunnel URL (RECOMMENDED):**
 ```bash
-# Test health endpoint
-curl http://143.55.45.86:5000/health
+# Replace with your actual tunnel URL from vast.ai
+curl https://xxxxx.trycloudflare.com/health
 
 # Test prediction
-curl -X POST http://143.55.45.86:5000/predict \
+curl -X POST https://xxxxx.trycloudflare.com/predict \
   -H "Content-Type: application/json" \
   -d '{"texts": ["cotton fabric", "polyester yarn thread", "fabric label"]}'
 ```
+
+**Note:** Direct IP (`http://143.55.45.86:5000`) will NOT work due to firewall. Always use Tunnel URL.
 
 ### Test from Streamlit App
 
