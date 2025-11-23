@@ -27,7 +27,7 @@ CORS(app)  # Allow cross-origin requests from Streamlit Cloud
 MODEL_NAME = "aluha501/xlm-roberta-base-fabric"
 VALID_LABELS = ["vải", "sợi", "xơ", "quần/áo", "phụ_trợ"]
 MAX_LENGTH = 128
-BATCH_SIZE = 64  # Larger batch size for GPU
+BATCH_SIZE = 128  # Larger batch size for GPU (increased for better throughput)
 API_HOST = "0.0.0.0"  # Listen on all interfaces
 API_PORT = 5000  # API port (use port forwarding if needed)
 
@@ -45,7 +45,16 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
 model = model.to(device)
 model.eval()
-print(f"✅ Model loaded successfully on {device}")
+
+# Use half precision (FP16) for faster inference if GPU supports it
+if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+    try:
+        model = model.half()  # Use FP16 for faster inference
+        print(f"✅ Model loaded with FP16 precision for faster inference")
+    except Exception as e:
+        print(f"⚠️ Could not use FP16, using FP32: {e}")
+else:
+    print(f"✅ Model loaded successfully on {device}")
 
 @app.route('/predict', methods=['POST'])
 def predict():

@@ -145,8 +145,9 @@ def predict_batch_api(texts, api_endpoint, progress_callback=None):
     total = len(texts)
     predictions = []
     
-    # Chia thành chunks lớn hơn cho API (1000 rows mỗi request để tối ưu)
-    chunk_size = 1000
+    # Chia thành chunks lớn hơn cho API (2000 rows mỗi request để tối ưu throughput)
+    # Larger chunks = fewer HTTP requests = faster overall processing
+    chunk_size = 2000
     total_chunks = (total + chunk_size - 1) // chunk_size
     
     for chunk_idx in range(total_chunks):
@@ -219,17 +220,20 @@ def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None
     for batch_idx, i in enumerate(range(0, len(texts), batch_size), 1):
         batch_texts = texts[i:i+batch_size]
         
-        # Tokenize batch
+        # Tokenize batch (optimized: use padding='longest' for variable length)
         inputs = tokenizer(
             batch_texts,
-            padding="max_length",
+            padding=True,  # 'longest' padding is faster than 'max_length'
             truncation=True,
             max_length=MAX_LENGTH,
             return_tensors="pt"
         )
         
-        # Move to device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        # Move to device (with non_blocking for faster transfer if CUDA)
+        if device.type == 'cuda':
+            inputs = {k: v.to(device, non_blocking=True) for k, v in inputs.items()}
+        else:
+            inputs = {k: v.to(device) for k, v in inputs.items()}
         
         # Predict
         with torch.no_grad():
