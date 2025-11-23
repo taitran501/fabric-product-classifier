@@ -452,7 +452,8 @@ def main():
             ("🧵", "cotton fabric"),
             ("🪡", "polyester yarn thread"),
             ("🌾", "polyester fiber roll"),
-            ("👕", "children pants")
+            ("👕", "children pants"),
+            ("🔧", "fabric label")
         ]
         
         text_color = "#b0b0b0" if st.session_state.theme == 'dark' else "#666666"
@@ -462,7 +463,7 @@ def main():
         bg_color = "#2a2a2a" if st.session_state.theme == 'dark' else "#f0f4ff"
         border_color = "#444444" if st.session_state.theme == 'dark' else "#d0d0d0"
         
-        example_chips_html = f'<div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem;">'
+        example_chips_html = f'<div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">'
         for icon, example in examples_data:
             example_chips_html += f'<div style="background: {bg_color}; border: 1px solid {border_color}; border-radius: 12px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;"><span style="font-size: 1.2rem;">{icon}</span><code style="background: transparent; color: {text_color}; font-size: 0.9rem; padding: 0; border: none;">{example}</code></div>'
         example_chips_html += '</div>'
