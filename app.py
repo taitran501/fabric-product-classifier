@@ -440,37 +440,27 @@ def main():
         # Initialize session state
         if 'example_text' not in st.session_state:
             st.session_state.example_text = ""
-        if 'auto_predict' not in st.session_state:
-            st.session_state.auto_predict = False
         
-        # Check if auto-predict was triggered from example chip
-        auto_predict_triggered = False
-        auto_predict_text = ""
-        if st.session_state.auto_predict and st.session_state.example_text:
-            # Auto-predict was triggered, capture the text
-            auto_predict_triggered = True
-            auto_predict_text = st.session_state.example_text
-            # Reset flags immediately
-            st.session_state.auto_predict = False
-            st.session_state.example_text = ""
-        
-        # Get current input value
-        if auto_predict_triggered:
-            current_input = auto_predict_text
+        # Handle example chip click - just fill text, don't auto-predict
+        if st.session_state.example_text:
+            # Example was selected, fill it into text area
+            current_input = st.session_state.example_text
+            st.session_state.example_text = ""  # Clear after use
         else:
+            # Use last input or empty
             current_input = st.session_state.get('last_input', '')
         
         user_input = st.text_area(
             " ",
             value=current_input,
-            placeholder="Enter product description here...\n\nOr click one of the example chips below to try it out!",
+            placeholder="Enter product description here...\n\nOr click one of the example chips below to fill the text!",
             height=180,
             help="Enter the product description in Vietnamese or English",
             key="input_text",
             label_visibility="collapsed"
         )
         
-        # Example chips - one-click action (short examples that fit fully)
+        # Example chips - fill text only (no auto-predict)
         examples_data = [
             ("🧵", "cotton fabric"),
             ("🪡", "polyester yarn thread"),
@@ -479,7 +469,7 @@ def main():
         ]
         
         text_color = "#b0b0b0" if st.session_state.theme == 'dark' else "#666666"
-        st.markdown(f'<div class="example-section-title">💡 Try these examples (click to auto-fill & predict):</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="example-section-title">💡 Try these examples (click to fill text):</div>', unsafe_allow_html=True)
         
         # Create columns for example chips - responsive layout
         chip_cols = st.columns(4)
@@ -487,19 +477,13 @@ def main():
             with chip_cols[i]:
                 if st.button(f"{icon} {example}", key=f"example_chip_{i}", use_container_width=True, type="secondary"):
                     st.session_state.example_text = example
-                    st.session_state.auto_predict = True
                     st.rerun()
         
         # Predict button
         predict_clicked = st.button("🔮 Predict Product Category", type="primary", use_container_width=True)
         
-        # Override user_input and trigger prediction if auto-predict was triggered
-        if auto_predict_triggered:
-            user_input = auto_predict_text
-            predict_clicked = True
-        
-        # Store last input for next render
-        if user_input.strip():
+        # Store last input for next render (only if not empty)
+        if user_input and user_input.strip():
             st.session_state.last_input = user_input
         
         # Results section
