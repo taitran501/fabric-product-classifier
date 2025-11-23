@@ -78,17 +78,17 @@ def predict():
         for batch_idx, i in enumerate(range(0, len(texts), BATCH_SIZE), 1):
             batch_texts = texts[i:i+BATCH_SIZE]
             
-            # Tokenize
+            # Tokenize (optimized: use padding=True for variable length, faster)
             inputs = tokenizer(
                 batch_texts,
-                padding="max_length",
+                padding=True,  # 'longest' padding is faster than 'max_length'
                 truncation=True,
                 max_length=MAX_LENGTH,
                 return_tensors="pt"
             )
             
-            # Move to GPU
-            inputs = {k: v.to(device) for k, v in inputs.items()}
+            # Move to GPU (with non_blocking for faster transfer)
+            inputs = {k: v.to(device, non_blocking=True) for k, v in inputs.items()}
             
             # Predict
             with torch.no_grad():
