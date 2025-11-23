@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.local
+
+# Model cache
+.cache/
+models/
+.huggingface/
+
+# Streamlit
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks (not needed for deployment)
+*.ipynb
+*.ipynb_checkpoints
+
+# Setup scripts (not needed for HF Spaces)
+setup.bat
+setup.sh
+ENV_SETUP.md
+env_template.txt
+
+# Local files
+task-2_2_setfit_4_res.ipynb
+
