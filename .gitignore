@@ -18,8 +18,9 @@ ENV/
 models/
 .huggingface/
 
-# Streamlit
-.streamlit/
+# Streamlit (keep config.toml, ignore secrets)
+.streamlit/secrets.toml
+.streamlit/secrets/
 
 # IDE
 .vscode/
@@ -35,7 +36,7 @@ Thumbs.db
 *.ipynb
 *.ipynb_checkpoints
 
-# Setup scripts (not needed for HF Spaces)
+# Setup scripts (not needed for Streamlit Cloud)
 setup.bat
 setup.sh
 ENV_SETUP.md
@@ -43,4 +44,12 @@ env_template.txt
 
 # Local files
 task-2_2_setfit_4_res.ipynb
+
+# Hugging Face Spaces specific (not needed for Streamlit Cloud)
+Dockerfile
+src/
+
+# Deployment scripts (optional - can be committed)
+# push_to_github.bat
+# push_to_github.sh
 
