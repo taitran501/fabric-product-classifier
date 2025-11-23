@@ -177,13 +177,13 @@ def predict_batch_api(texts, api_endpoint, progress_callback=None):
     
     return predictions
 
-def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None):
+def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None, use_gpu_api=False):
     """
     Predict labels for a batch of texts.
     Uses GPU API if available, otherwise falls back to local model (CPU).
     """
     # Priority: GPU API > Local Model
-    if GPU_API_ENDPOINT:
+    if use_gpu_api and GPU_API_ENDPOINT:
         try:
             # Test API connection first
             health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
@@ -280,6 +280,7 @@ def main():
     # Check GPU API availability and load model accordingly
     tokenizer = None
     model = None
+    use_gpu_api = False  # Track if we should use GPU API
     
     if GPU_API_ENDPOINT:
         try:
@@ -287,16 +288,16 @@ def main():
             if health_response.status_code == 200:
                 health_data = health_response.json()
                 st.success(f"✅ GPU acceleration available! ({health_data.get('device', 'GPU')})")
-                # Don't load local model when GPU API is available
+                use_gpu_api = True  # GPU API is available
             else:
                 st.warning("⚠️ GPU API not responding, will use CPU fallback")
-                GPU_API_ENDPOINT = None  # Disable GPU API
+                use_gpu_api = False
         except Exception as e:
             st.warning(f"⚠️ GPU API unavailable ({str(e)}), will use CPU fallback")
-            GPU_API_ENDPOINT = None  # Disable GPU API
+            use_gpu_api = False
     
     # Load model (only needed if GPU API is not available)
-    if not GPU_API_ENDPOINT:
+    if not use_gpu_api:
         with st.spinner("🔄 Loading AI model... This may take a moment on first run."):
             tokenizer, model = load_model()
         
@@ -403,7 +404,8 @@ def main():
                     tokenizer, 
                     model, 
                     batch_size=32,
-                    progress_callback=update_prediction_progress
+                    progress_callback=update_prediction_progress,
+                    use_gpu_api=use_gpu_api
                 )
                 
                 # Clear prediction progress bars

@@ -4,13 +4,18 @@
 
 **SSH Connection:**
 ```bash
+# Direct connection
 ssh -p 54754 root@143.55.45.86 -L 8080:localhost:8080
+
+# Proxy connection (if direct doesn't work)
+ssh -p 21569 root@ssh9.vast.ai -L 8080:localhost:8080
 ```
 
 **API Endpoint:**
 - IP: `143.55.45.86`
 - Port: `5000` (API server)
 - Port Forwarding: `8080:localhost:8080` (for web access if needed)
+- Proxy SSH: `ssh9.vast.ai:21569` (alternative connection method)
 
 **Streamlit Cloud Environment Variable:**
 ```
