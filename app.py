@@ -188,19 +188,19 @@ def predict_batch_api(texts, api_endpoint, progress_callback=None):
     
     return predictions
 
-def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None, use_gpu_api=False):
+def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None, use_gpu_api=False, gpu_api_endpoint=None):
     """
     Predict labels for a batch of texts.
     Uses GPU API if available, otherwise falls back to local model (CPU).
     """
     # Priority: GPU API > Local Model
-    if use_gpu_api and GPU_API_ENDPOINT:
+    if use_gpu_api and gpu_api_endpoint:
         try:
             # Test API connection first
-            health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
+            health_response = requests.get(f"{gpu_api_endpoint}/health", timeout=5)
             if health_response.status_code == 200:
                 st.info("🚀 Using GPU acceleration")
-                return predict_batch_api(texts, GPU_API_ENDPOINT, progress_callback)
+                return predict_batch_api(texts, gpu_api_endpoint, progress_callback)
             else:
                 st.warning("⚠️ GPU API not responding, falling back to CPU")
         except requests.exceptions.ConnectTimeout:
@@ -255,6 +255,9 @@ def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None
     return predictions
 
 def main():
+    # Read GPU_API_ENDPOINT from environment (re-read each time to avoid UnboundLocalError)
+    gpu_api_endpoint = os.getenv("GPU_API_ENDPOINT", None)
+    
     # Custom CSS for beautiful header
     st.markdown("""
     <style>
@@ -300,9 +303,9 @@ def main():
     model = None
     use_gpu_api = False  # Track if we should use GPU API
     
-    if GPU_API_ENDPOINT:
+    if gpu_api_endpoint:
         try:
-            health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
+            health_response = requests.get(f"{gpu_api_endpoint}/health", timeout=5)
             if health_response.status_code == 200:
                 health_data = health_response.json()
                 st.success(f"✅ GPU acceleration available! ({health_data.get('device', 'GPU')})")
