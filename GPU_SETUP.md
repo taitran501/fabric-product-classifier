@@ -17,10 +17,16 @@ ssh -p 21569 root@ssh9.vast.ai -L 8080:localhost:8080
 - Port Forwarding: `8080:localhost:8080` (for web access if needed)
 - Proxy SSH: `ssh9.vast.ai:21569` (alternative connection method)
 
-**Streamlit Cloud Environment Variable:**
+**Streamlit Cloud Secrets (TOML format):**
+```toml
+GPU_API_ENDPOINT = "http://143.55.45.86:5000"
 ```
-GPU_API_ENDPOINT=http://143.55.45.86:5000
-```
+
+**Important Notes:**
+- Use TOML format in Streamlit Cloud Secrets (see https://toml.io/en/v1.0.0)
+- The value must be in quotes (string format)
+- No spaces around the `=` sign is required, but `key = "value"` format is recommended
+- After saving, wait ~1 minute for changes to propagate
 
 ---
 

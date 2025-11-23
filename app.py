@@ -256,7 +256,18 @@ def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None
 
 def main():
     # Read GPU_API_ENDPOINT from environment (re-read each time to avoid UnboundLocalError)
+    # Streamlit Cloud Secrets are available as environment variables
+    # Format in Streamlit Cloud Secrets (TOML):
+    # GPU_API_ENDPOINT = "http://143.55.45.86:5000"
     gpu_api_endpoint = os.getenv("GPU_API_ENDPOINT", None)
+    
+    # Debug: Show if GPU endpoint is configured (without exposing the full URL)
+    if gpu_api_endpoint:
+        # Show only that it's configured, not the full URL for security
+        endpoint_preview = gpu_api_endpoint.split("://")[-1].split("/")[0] if "://" in gpu_api_endpoint else "[configured]"
+        st.info(f"🔧 GPU API endpoint configured: {endpoint_preview}")
+    else:
+        st.info("ℹ️ GPU API endpoint not configured - using CPU mode")
     
     # Custom CSS for beautiful header
     st.markdown("""
