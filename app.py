@@ -437,7 +437,8 @@ def main():
                     model, 
                     batch_size=32,
                     progress_callback=update_prediction_progress,
-                    use_gpu_api=use_gpu_api
+                    use_gpu_api=use_gpu_api,
+                    gpu_api_endpoint=gpu_api_endpoint
                 )
                 
                 # Clear prediction progress bars
