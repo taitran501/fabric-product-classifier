@@ -437,28 +437,23 @@ def main():
         # Input section
         st.markdown("### 📝 Enter Product Description")
         
-        # Initialize session state
-        if 'example_text' not in st.session_state:
-            st.session_state.example_text = ""
+        # Initialize session state for input text
+        if 'input_text_value' not in st.session_state:
+            st.session_state.input_text_value = ""
         
-        # Handle example chip click - just fill text, don't auto-predict
-        if st.session_state.example_text:
-            # Example was selected, fill it into text area
-            current_input = st.session_state.example_text
-            st.session_state.example_text = ""  # Clear after use
-        else:
-            # Use last input or empty
-            current_input = st.session_state.get('last_input', '')
-        
+        # Text input area - use session state value directly
         user_input = st.text_area(
             " ",
-            value=current_input,
+            value=st.session_state.input_text_value,
             placeholder="Enter product description here...\n\nOr click one of the example chips below to fill the text!",
             height=180,
             help="Enter the product description in Vietnamese or English",
             key="input_text",
             label_visibility="collapsed"
         )
+        
+        # Always sync: update session state with current input value
+        st.session_state.input_text_value = user_input
         
         # Example chips - fill text only (no auto-predict)
         examples_data = [
@@ -476,15 +471,11 @@ def main():
         for i, (icon, example) in enumerate(examples_data):
             with chip_cols[i]:
                 if st.button(f"{icon} {example}", key=f"example_chip_{i}", use_container_width=True, type="secondary"):
-                    st.session_state.example_text = example
+                    st.session_state.input_text_value = example
                     st.rerun()
         
         # Predict button
         predict_clicked = st.button("🔮 Predict Product Category", type="primary", use_container_width=True)
-        
-        # Store last input for next render (only if not empty)
-        if user_input and user_input.strip():
-            st.session_state.last_input = user_input
         
         # Results section
         if predict_clicked:
