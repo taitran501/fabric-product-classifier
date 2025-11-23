@@ -1,47 +1,27 @@
-# 🧵 Fabric Product Classifier
+# 🧵 Fabric Product Classifier - Batch Processing
 
-AI-powered web application for classifying fabric products into 5 categories using a fine-tuned XLM-RoBERTa model.
+Web application for classifying fabric products into categories using XLM-RoBERTa model.
 
-## 🎯 Features
+## Features
 
-- **5 Product Categories**: vải (fabric), sợi (yarn/thread), xơ (fiber), quần/áo (pants/shirt), phụ_trợ (accessories)
-- **Real-time Prediction**: Instant classification with confidence scores
-- **Beautiful UI**: Modern gradient design with dark/light mode support
-- **Example Chips**: Quick fill text with pre-loaded examples
+- 📤 Upload Excel files with product descriptions
+- 🔄 Automatic text preprocessing
+- 🤖 AI-powered batch prediction
+- 📥 Download results with predictions
 
-## 🚀 Live Demo
+## Categories
 
-Deployed on Streamlit Cloud: [View App](https://your-app-name.streamlit.app)
+- **vải** - Fabric
+- **sợi** - Yarn/Thread
+- **xơ** - Fiber
+- **quần/áo** - Pants/Shirt
+- **phụ_trợ** - Accessories
 
-## 📊 Model
+## Quick Start
 
-This app uses the `aluha501/xlm-roberta-base-fabric` model from Hugging Face, a fine-tuned XLM-RoBERTa model trained on fabric product descriptions.
-
-## 💡 Example Inputs
-
-- `cotton fabric`
-- `polyester yarn thread`
-- `polyester fiber roll`
-- `children pants`
-
-## 🔧 Technical Details
-
-- **Framework**: Streamlit
-- **Model**: XLM-RoBERTa Base (fine-tuned)
-- **Max Input Length**: 128 tokens
-- **Categories**: 5 classes
-
-## 📦 Installation (Local Development)
+### Local Development
 
 ```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/fabric-product-classifier.git
-cd fabric-product-classifier
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
 # Install dependencies
 pip install -r requirements.txt
 
@@ -49,10 +29,47 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 📝 License
+### Deployment
 
-MIT License
+Deployed on **Streamlit Community Cloud**
 
-## 👤 Author
+**Repository:** `https://github.com/taitran501/fabric-product-classifier`
 
-aluha501
+**Live Demo:** [Your Streamlit Cloud URL]
+
+## GPU Acceleration (Optional)
+
+For faster predictions, setup GPU server on vast.ai:
+
+1. See `GPU_SETUP.md` for detailed instructions
+2. Quick setup:
+   - Upload `api_server.py` to GPU server
+   - Create tunnel on vast.ai dashboard
+   - Update `GPU_API_ENDPOINT` in Streamlit Cloud Secrets
+
+## Files
+
+- `app.py` - Main Streamlit application
+- `api_server.py` - GPU API server (deploy on vast.ai)
+- `api_server_content.txt` - API server content for copy-paste
+- `requirements.txt` - Python dependencies
+- `api_requirements.txt` - Dependencies for GPU server
+- `GPU_SETUP.md` - GPU setup guide
+
+## Model
+
+- **Model:** `aluha501/xlm-roberta-base-fabric`
+- **Base:** XLM-RoBERTa Base
+- **Accuracy:** 98.55%
+- **Macro F1:** 96.23%
+
+## Usage
+
+1. Upload Excel file with product descriptions
+2. Select the product column
+3. Click "Process File"
+4. Download results with `label_predict` column
+
+---
+
+For GPU setup details, see `GPU_SETUP.md`
