@@ -188,12 +188,19 @@ def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None
             # Test API connection first
             health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
             if health_response.status_code == 200:
-                st.info(f"🚀 Using GPU acceleration via {GPU_API_ENDPOINT}")
+                st.info("🚀 Using GPU acceleration")
                 return predict_batch_api(texts, GPU_API_ENDPOINT, progress_callback)
             else:
                 st.warning("⚠️ GPU API not responding, falling back to CPU")
+        except requests.exceptions.ConnectTimeout:
+            st.warning("⚠️ GPU API connection timeout, falling back to CPU")
+        except requests.exceptions.ConnectionError:
+            st.warning("⚠️ GPU API connection failed, falling back to CPU")
         except Exception as e:
-            st.warning(f"⚠️ GPU API unavailable ({str(e)}), falling back to CPU")
+            # Hide sensitive information (IP addresses) from error messages
+            import re
+            error_msg = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP_HIDDEN]', str(e))
+            st.warning("⚠️ GPU API unavailable, falling back to CPU")
     
     # Fallback to local model (CPU) - model must be loaded
     if model is None or tokenizer is None:
@@ -292,8 +299,19 @@ def main():
             else:
                 st.warning("⚠️ GPU API not responding, will use CPU fallback")
                 use_gpu_api = False
+        except requests.exceptions.ConnectTimeout:
+            st.warning("⚠️ GPU API connection timeout, will use CPU fallback")
+            use_gpu_api = False
+        except requests.exceptions.ConnectionError:
+            st.warning("⚠️ GPU API connection failed, will use CPU fallback")
+            use_gpu_api = False
         except Exception as e:
-            st.warning(f"⚠️ GPU API unavailable ({str(e)}), will use CPU fallback")
+            # Hide sensitive information (IP addresses) from error messages
+            error_msg = str(e)
+            # Remove IP addresses from error message
+            import re
+            error_msg = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP_HIDDEN]', error_msg)
+            st.warning(f"⚠️ GPU API unavailable, will use CPU fallback")
             use_gpu_api = False
     
     # Load model (only needed if GPU API is not available)

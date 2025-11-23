@@ -113,14 +113,39 @@ curl -X POST http://localhost:5000/predict \
   -d '{"texts": ["cotton fabric", "polyester yarn"]}'
 ```
 
-### Step 6: Configure Firewall (if needed)
+### Step 6: Configure Firewall and Network Access
 
+**IMPORTANT:** Vast.ai instances are typically behind a firewall. You need to configure network access:
+
+**Option A: Use Vast.ai Port Forwarding (RECOMMENDED)**
+1. In vast.ai dashboard, go to your instance
+2. Look for "Ports" or "Network" settings
+3. Add port forwarding: Map external port (e.g., 5000) to internal port 5000
+4. Use the forwarded port in Streamlit Cloud: `http://[EXTERNAL_IP]:[FORWARDED_PORT]`
+
+**Option B: Use SSH Tunnel (Alternative)**
+If direct connection doesn't work, you may need to:
+1. Set up an SSH tunnel from a server that can access both Streamlit Cloud and vast.ai
+2. Or use vast.ai's proxy SSH connection
+
+**Option C: Configure Firewall on GPU Server**
 ```bash
 # Allow port 5000
 ufw allow 5000/tcp
 # Or if using iptables
 iptables -A INPUT -p tcp --dport 5000 -j ACCEPT
+
+# Check if port is listening
+netstat -tuln | grep 5000
+# Or
+ss -tuln | grep 5000
 ```
+
+**Option D: Use Vast.ai Public IP (if available)**
+Some vast.ai instances have public IPs. Check your instance settings for:
+- Public IP address
+- Port forwarding configuration
+- Firewall rules
 
 ---
 
@@ -193,21 +218,39 @@ curl -X POST http://143.55.45.86:5000/predict \
 
 ### API Server Not Accessible
 
-1. Check if server is running:
+1. **Check if server is running:**
    ```bash
    ps aux | grep api_server
    ```
 
-2. Check firewall:
+2. **Check if port is listening:**
    ```bash
-   ufw status
-   iptables -L -n
+   netstat -tuln | grep 5000
+   # Or
+   ss -tuln | grep 5000
    ```
 
-3. Test locally on server:
+3. **Test locally on server:**
    ```bash
    curl http://localhost:5000/health
    ```
+
+4. **Check vast.ai Network Settings:**
+   - Go to vast.ai dashboard → Your instance
+   - Check "Ports" or "Network" section
+   - Ensure port 5000 is forwarded/exposed
+   - Check if instance has public IP or needs port forwarding
+
+5. **Test from outside (if you have public IP):**
+   ```bash
+   # From your local machine
+   curl http://143.55.45.86:5000/health
+   ```
+
+6. **If connection timeout:**
+   - Vast.ai instances are often behind NAT/firewall
+   - You may need to use vast.ai's port forwarding feature
+   - Or set up SSH tunnel through proxy: `ssh -p 21569 root@ssh9.vast.ai -L 5000:localhost:5000`
 
 ### Connection Timeout
 
