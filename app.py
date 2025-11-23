@@ -443,8 +443,22 @@ def main():
         if 'auto_predict' not in st.session_state:
             st.session_state.auto_predict = False
         
+        # Check if auto-predict was triggered from example chip
+        auto_predict_triggered = False
+        auto_predict_text = ""
+        if st.session_state.auto_predict and st.session_state.example_text:
+            # Auto-predict was triggered, capture the text
+            auto_predict_triggered = True
+            auto_predict_text = st.session_state.example_text
+            # Reset flags immediately
+            st.session_state.auto_predict = False
+            st.session_state.example_text = ""
+        
         # Get current input value
-        current_input = st.session_state.example_text if st.session_state.example_text else ""
+        if auto_predict_triggered:
+            current_input = auto_predict_text
+        else:
+            current_input = st.session_state.get('last_input', '')
         
         user_input = st.text_area(
             " ",
@@ -458,7 +472,7 @@ def main():
         
         # Example chips - one-click action (short examples that fit fully)
         examples_data = [
-            ("🧵", "cotton fabric 100% new"),
+            ("🧵", "cotton fabric"),
             ("🪡", "polyester yarn thread"),
             ("🌾", "polyester fiber roll"),
             ("👕", "children pants")
@@ -476,23 +490,21 @@ def main():
                     st.session_state.auto_predict = True
                     st.rerun()
         
-        # Clear example text after use (if not auto-predicting)
-        if st.session_state.example_text and not st.session_state.auto_predict:
-            st.session_state.example_text = ""
+        # Predict button
+        predict_clicked = st.button("🔮 Predict Product Category", type="primary", use_container_width=True)
         
-        # Predict button (only show if not auto-predicting)
-        predict_clicked = False
-        if not st.session_state.auto_predict:
-            predict_clicked = st.button("🔮 Predict Product Category", type="primary", use_container_width=True)
-        else:
-            # Auto-predict is triggered
+        # Override user_input and trigger prediction if auto-predict was triggered
+        if auto_predict_triggered:
+            user_input = auto_predict_text
             predict_clicked = True
-            user_input = st.session_state.example_text
-            st.session_state.auto_predict = False  # Reset flag
+        
+        # Store last input for next render
+        if user_input.strip():
+            st.session_state.last_input = user_input
         
         # Results section
         if predict_clicked:
-            if user_input.strip():
+            if user_input and user_input.strip():
                 with st.spinner("🤖 Analyzing product description..."):
                     predicted_label, confidence, all_predictions = predict(user_input, tokenizer, model)
                 
