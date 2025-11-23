@@ -261,13 +261,16 @@ def main():
     # GPU_API_ENDPOINT = "http://143.55.45.86:5000"
     gpu_api_endpoint = os.getenv("GPU_API_ENDPOINT", None)
     
-    # Debug: Show if GPU endpoint is configured (without exposing the full URL)
-    if gpu_api_endpoint:
-        # Show only that it's configured, not the full URL for security
+    # Debug mode: Only show GPU info in local development (not on Streamlit Cloud)
+    # Check if running locally by checking for .env file or localhost
+    is_local = os.path.exists(".env") or "localhost" in os.getenv("STREAMLIT_SERVER_PORT", "")
+    
+    # Only show debug info locally, not on production
+    if is_local and gpu_api_endpoint:
         endpoint_preview = gpu_api_endpoint.split("://")[-1].split("/")[0] if "://" in gpu_api_endpoint else "[configured]"
-        st.info(f"🔧 GPU API endpoint configured: {endpoint_preview}")
-    else:
-        st.info("ℹ️ GPU API endpoint not configured - using CPU mode")
+        st.info(f"🔧 [DEBUG] GPU API endpoint configured: {endpoint_preview}")
+    elif is_local:
+        st.info("ℹ️ [DEBUG] GPU API endpoint not configured - using CPU mode")
     
     # Custom CSS for beautiful header
     st.markdown("""
@@ -319,24 +322,23 @@ def main():
             health_response = requests.get(f"{gpu_api_endpoint}/health", timeout=5)
             if health_response.status_code == 200:
                 health_data = health_response.json()
-                st.success(f"✅ GPU acceleration available! ({health_data.get('device', 'GPU')})")
+                # Only show success message in local debug mode
+                if is_local:
+                    st.success(f"✅ [DEBUG] GPU acceleration available! ({health_data.get('device', 'GPU')})")
                 use_gpu_api = True  # GPU API is available
             else:
-                st.warning("⚠️ GPU API not responding, will use CPU fallback")
+                # Only show warning in local debug mode
+                if is_local:
+                    st.warning("⚠️ [DEBUG] GPU API not responding, will use CPU fallback")
                 use_gpu_api = False
         except requests.exceptions.ConnectTimeout:
-            st.warning("⚠️ GPU API connection timeout, will use CPU fallback")
+            # Silently fallback to CPU - don't show error to users
             use_gpu_api = False
         except requests.exceptions.ConnectionError:
-            st.warning("⚠️ GPU API connection failed, will use CPU fallback")
+            # Silently fallback to CPU - don't show error to users
             use_gpu_api = False
         except Exception as e:
-            # Hide sensitive information (IP addresses) from error messages
-            error_msg = str(e)
-            # Remove IP addresses from error message
-            import re
-            error_msg = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP_HIDDEN]', error_msg)
-            st.warning(f"⚠️ GPU API unavailable, will use CPU fallback")
+            # Silently fallback to CPU - don't show error to users
             use_gpu_api = False
     
     # Load model (only needed if GPU API is not available)
