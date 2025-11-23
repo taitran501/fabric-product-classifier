@@ -7,6 +7,7 @@ import re
 import os
 from pathlib import Path
 from io import BytesIO
+import requests
 
 # Try to load .env file if it exists (for local development)
 try:
@@ -28,6 +29,13 @@ MODEL_NAME = os.getenv("MODEL_NAME", "aluha501/xlm-roberta-base-fabric")
 MODEL_PATH = os.getenv("MODEL_PATH", None)
 VALID_LABELS = ["vải", "sợi", "xơ", "quần/áo", "phụ_trợ"]
 MAX_LENGTH = int(os.getenv("MAX_LENGTH", "128"))
+
+# GPU API configuration (for vast.ai GPU server)
+# Set GPU_API_ENDPOINT environment variable in Streamlit Cloud to enable GPU acceleration
+# Example: GPU_API_ENDPOINT=http://143.55.45.86:5000
+# When renting new GPU, update this value in Streamlit Cloud Secrets
+# Current GPU: ssh -p 54754 root@143.55.45.86
+GPU_API_ENDPOINT = os.getenv("GPU_API_ENDPOINT", None)
 
 # Preprocessing function from preprocessing.ipynb
 def clean_product_string(s):
@@ -132,8 +140,65 @@ def load_model():
         st.stop()
         return None, None
 
+def predict_batch_api(texts, api_endpoint, progress_callback=None):
+    """Predict using GPU API endpoint (vast.ai)"""
+    total = len(texts)
+    predictions = []
+    
+    # Chia thành chunks lớn hơn cho API (1000 rows mỗi request để tối ưu)
+    chunk_size = 1000
+    total_chunks = (total + chunk_size - 1) // chunk_size
+    
+    for chunk_idx in range(total_chunks):
+        start_idx = chunk_idx * chunk_size
+        end_idx = min(start_idx + chunk_size, total)
+        chunk_texts = texts[start_idx:end_idx]
+        
+        try:
+            response = requests.post(
+                f"{api_endpoint}/predict",
+                json={'texts': chunk_texts},
+                timeout=300  # 5 minutes timeout per chunk
+            )
+            response.raise_for_status()
+            result = response.json()
+            chunk_predictions = result['predictions']
+            predictions.extend(chunk_predictions)
+            
+            if progress_callback:
+                progress = (chunk_idx + 1) / total_chunks
+                processed = len(predictions)
+                progress_callback(progress, chunk_idx + 1, total_chunks, processed, total)
+        
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Error calling GPU API: {str(e)}"
+            st.error(f"❌ {error_msg}")
+            raise Exception(error_msg)
+    
+    return predictions
+
 def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None):
-    """Predict labels for a batch of texts"""
+    """
+    Predict labels for a batch of texts.
+    Uses GPU API if available, otherwise falls back to local model (CPU).
+    """
+    # Priority: GPU API > Local Model
+    if GPU_API_ENDPOINT:
+        try:
+            # Test API connection first
+            health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
+            if health_response.status_code == 200:
+                st.info(f"🚀 Using GPU acceleration via {GPU_API_ENDPOINT}")
+                return predict_batch_api(texts, GPU_API_ENDPOINT, progress_callback)
+            else:
+                st.warning("⚠️ GPU API not responding, falling back to CPU")
+        except Exception as e:
+            st.warning(f"⚠️ GPU API unavailable ({str(e)}), falling back to CPU")
+    
+    # Fallback to local model (CPU) - model must be loaded
+    if model is None or tokenizer is None:
+        raise ValueError("Model and tokenizer must be loaded when GPU API is not available")
+    
     device = next(model.parameters()).device
     predictions = []
     total_batches = (len(texts) + batch_size - 1) // batch_size
@@ -212,14 +277,33 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Load model
-    with st.spinner("🔄 Loading AI model... This may take a moment on first run."):
-        tokenizer, model = load_model()
+    # Check GPU API availability and load model accordingly
+    tokenizer = None
+    model = None
     
-    if tokenizer is None or model is None:
-        st.stop()
+    if GPU_API_ENDPOINT:
+        try:
+            health_response = requests.get(f"{GPU_API_ENDPOINT}/health", timeout=5)
+            if health_response.status_code == 200:
+                health_data = health_response.json()
+                st.success(f"✅ GPU acceleration available! ({health_data.get('device', 'GPU')})")
+                # Don't load local model when GPU API is available
+            else:
+                st.warning("⚠️ GPU API not responding, will use CPU fallback")
+                GPU_API_ENDPOINT = None  # Disable GPU API
+        except Exception as e:
+            st.warning(f"⚠️ GPU API unavailable ({str(e)}), will use CPU fallback")
+            GPU_API_ENDPOINT = None  # Disable GPU API
     
-    st.success("✅ Model loaded successfully!")
+    # Load model (only needed if GPU API is not available)
+    if not GPU_API_ENDPOINT:
+        with st.spinner("🔄 Loading AI model... This may take a moment on first run."):
+            tokenizer, model = load_model()
+        
+        if tokenizer is None or model is None:
+            st.stop()
+        
+        st.success("✅ Model loaded successfully!")
     
     # File upload section
     st.markdown("---")

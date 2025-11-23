@@ -1,0 +1,152 @@
+"""
+GPU API Server for Fabric Product Classifier
+Deploy this on vast.ai GPU server to handle predictions with GPU acceleration.
+
+Setup:
+1. SSH into vast.ai GPU server: ssh -p 54754 root@143.55.45.86
+2. Install dependencies: pip install flask flask-cors transformers torch
+3. Run: python api_server.py
+4. API will be available at: http://143.55.45.86:5000
+
+Note: If you rent a new GPU, update:
+- IP address in this file (API_HOST)
+- IP address in Streamlit Cloud environment variable (GPU_API_ENDPOINT)
+"""
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+import os
+import time
+
+app = Flask(__name__)
+CORS(app)  # Allow cross-origin requests from Streamlit Cloud
+
+# Configuration
+MODEL_NAME = "aluha501/xlm-roberta-base-fabric"
+VALID_LABELS = ["vải", "sợi", "xơ", "quần/áo", "phụ_trợ"]
+MAX_LENGTH = 128
+BATCH_SIZE = 64  # Larger batch size for GPU
+API_HOST = "0.0.0.0"  # Listen on all interfaces
+API_PORT = 5000  # API port (use port forwarding if needed)
+
+# Check GPU availability
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"🚀 Initializing API Server...")
+print(f"📱 Using device: {device}")
+if torch.cuda.is_available():
+    print(f"🎮 GPU: {torch.cuda.get_device_name(0)}")
+    print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+
+# Load model on GPU
+print(f"📥 Loading model: {MODEL_NAME}...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+model = model.to(device)
+model.eval()
+print(f"✅ Model loaded successfully on {device}")
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    """Predict labels for a batch of texts"""
+    try:
+        data = request.json
+        texts = data.get('texts', [])
+        
+        if not texts:
+            return jsonify({'error': 'No texts provided'}), 400
+        
+        if not isinstance(texts, list):
+            return jsonify({'error': 'Texts must be a list'}), 400
+        
+        print(f"📊 Received {len(texts)} texts for prediction")
+        start_time = time.time()
+        
+        predictions = []
+        total_batches = (len(texts) + BATCH_SIZE - 1) // BATCH_SIZE
+        
+        for batch_idx, i in enumerate(range(0, len(texts), BATCH_SIZE), 1):
+            batch_texts = texts[i:i+BATCH_SIZE]
+            
+            # Tokenize
+            inputs = tokenizer(
+                batch_texts,
+                padding="max_length",
+                truncation=True,
+                max_length=MAX_LENGTH,
+                return_tensors="pt"
+            )
+            
+            # Move to GPU
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            # Predict
+            with torch.no_grad():
+                outputs = model(**inputs)
+                logits = outputs.logits
+                probabilities = torch.nn.functional.softmax(logits, dim=-1)
+                pred_ids = torch.argmax(probabilities, dim=-1).cpu().numpy()
+            
+            batch_predictions = [VALID_LABELS[pred_id] for pred_id in pred_ids]
+            predictions.extend(batch_predictions)
+            
+            if batch_idx % 10 == 0:
+                print(f"  Processed {batch_idx}/{total_batches} batches ({len(predictions)}/{len(texts)} texts)")
+        
+        elapsed_time = time.time() - start_time
+        print(f"✅ Completed prediction in {elapsed_time:.2f}s ({len(texts)/elapsed_time:.1f} texts/sec)")
+        
+        return jsonify({
+            'predictions': predictions,
+            'count': len(predictions),
+            'processing_time': round(elapsed_time, 2)
+        })
+    
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        traceback.print_exc()
+        return jsonify({'error': error_msg}), 500
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    gpu_info = {}
+    if torch.cuda.is_available():
+        gpu_info = {
+            'device_name': torch.cuda.get_device_name(0),
+            'memory_allocated': f"{torch.cuda.memory_allocated(0) / 1024**3:.2f} GB",
+            'memory_reserved': f"{torch.cuda.memory_reserved(0) / 1024**3:.2f} GB"
+        }
+    
+    return jsonify({
+        'status': 'healthy',
+        'device': str(device),
+        'gpu': gpu_info,
+        'model': MODEL_NAME
+    })
+
+@app.route('/', methods=['GET'])
+def index():
+    """API information"""
+    return jsonify({
+        'service': 'Fabric Product Classifier GPU API',
+        'version': '1.0',
+        'endpoints': {
+            '/health': 'GET - Health check',
+            '/predict': 'POST - Predict labels (send {"texts": ["text1", "text2", ...]})'
+        },
+        'device': str(device)
+    })
+
+if __name__ == '__main__':
+    print(f"\n🌐 Starting API server on {API_HOST}:{API_PORT}")
+    print(f"📡 API endpoint: http://{API_HOST}:{API_PORT}")
+    print(f"💡 Health check: http://{API_HOST}:{API_PORT}/health")
+    print(f"🔗 Predict endpoint: http://{API_HOST}:{API_PORT}/predict")
+    print("\n⚠️  Note: If using port forwarding, access via forwarded port")
+    print("=" * 60)
+    
+    app.run(host=API_HOST, port=API_PORT, threaded=True)
+
