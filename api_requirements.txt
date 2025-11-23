@@ -8,4 +8,5 @@ torch>=2.0.0
 sentencepiece>=0.1.99
 tokenizers>=0.13.0
 huggingface-hub>=0.16.0
+gunicorn>=21.2.0
 

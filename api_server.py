@@ -168,5 +168,15 @@ if __name__ == '__main__':
         print("   netstat -tuln | grep 5000")
         exit(1)
     
-    app.run(host=API_HOST, port=API_PORT, threaded=True)
+    # Production mode: Use gunicorn if available, otherwise use Flask dev server
+    import sys
+    if 'gunicorn' in sys.modules or 'gunicorn' in str(sys.argv):
+        # Running with gunicorn
+        pass
+    else:
+        # Development mode - Flask dev server
+        print("\n⚠️  Running in development mode (Flask dev server)")
+        print("💡 For production, use: gunicorn -w 1 -b 0.0.0.0:5001 api_server:app")
+        print("=" * 60)
+        app.run(host=API_HOST, port=API_PORT, threaded=True)
 

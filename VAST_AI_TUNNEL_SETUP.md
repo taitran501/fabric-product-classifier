@@ -8,6 +8,22 @@ Vast.ai GPU instances are behind a firewall/NAT and don't have publicly accessib
 
 ### 1. Start API Server on GPU
 
+**Option A: Production Mode (RECOMMENDED - using gunicorn)**
+```bash
+# SSH into GPU server
+ssh -p 54754 root@143.55.45.86
+
+# Install gunicorn if not already installed
+pip3 install gunicorn
+
+# Start API server with gunicorn (in screen to keep it running)
+screen -S api_server
+cd /root
+gunicorn -w 1 -b 0.0.0.0:5001 --timeout 300 api_server:app
+# Press Ctrl+A then D to detach
+```
+
+**Option B: Development Mode (for testing only)**
 ```bash
 # SSH into GPU server
 ssh -p 54754 root@143.55.45.86
@@ -18,6 +34,8 @@ cd /root
 python3 api_server.py
 # Press Ctrl+A then D to detach
 ```
+
+**Note:** Flask dev server shows a warning but works fine for internal APIs. For production, use gunicorn (Option A).
 
 ### 2. Create Tunnel in Vast.ai Dashboard
 
