@@ -14,11 +14,15 @@ ssh -p 21569 root@ssh9.vast.ai -L 8080:localhost:8080
 **API Endpoint:**
 - IP: `143.55.45.86`
 - Port: `5000` (API server)
-- Port Forwarding: `8080:localhost:8080` (for web access if needed)
+- **Tunnel URL (RECOMMENDED)**: Use vast.ai Tunnels feature to expose port 5000
 - Proxy SSH: `ssh9.vast.ai:21569` (alternative connection method)
 
 **Streamlit Cloud Secrets (TOML format):**
 ```toml
+# Option 1: Using Tunnel URL (RECOMMENDED - works from anywhere)
+GPU_API_ENDPOINT = "https://your-tunnel-url.trycloudflare.com"
+
+# Option 2: Direct IP (may not work due to firewall)
 GPU_API_ENDPOINT = "http://143.55.45.86:5000"
 ```
 
@@ -119,39 +123,51 @@ curl -X POST http://localhost:5000/predict \
   -d '{"texts": ["cotton fabric", "polyester yarn"]}'
 ```
 
-### Step 6: Configure Firewall and Network Access
+### Step 6: Create Tunnel to Expose API Server (REQUIRED)
 
-**IMPORTANT:** Vast.ai instances are typically behind a firewall. You need to configure network access:
+**IMPORTANT:** Vast.ai instances are behind a firewall. You MUST use the Tunnels feature to expose your API server.
 
-**Option A: Use Vast.ai Port Forwarding (RECOMMENDED)**
-1. In vast.ai dashboard, go to your instance
-2. Look for "Ports" or "Network" settings
-3. Add port forwarding: Map external port (e.g., 5000) to internal port 5000
-4. Use the forwarded port in Streamlit Cloud: `http://[EXTERNAL_IP]:[FORWARDED_PORT]`
+**Using Vast.ai Tunnels (RECOMMENDED - EASIEST):**
 
-**Option B: Use SSH Tunnel (Alternative)**
-If direct connection doesn't work, you may need to:
-1. Set up an SSH tunnel from a server that can access both Streamlit Cloud and vast.ai
-2. Or use vast.ai's proxy SSH connection
+1. **In vast.ai dashboard:**
+   - Go to your instance
+   - Click on "Tunnels" in the left sidebar (or "Tunnels (Open New Ports)")
+   
+2. **Create new tunnel:**
+   - In the "Enter target URL" field, enter: `http://localhost:5000`
+   - Click "+ Create New Tunnel"
+   - Wait a few seconds for tunnel to be created
+   
+3. **Copy Tunnel URL:**
+   - You'll get a URL like: `https://xxxxx.trycloudflare.com`
+   - Click "Copy URL" to copy it
+   
+4. **Update Streamlit Cloud Secrets:**
+   - Go to Streamlit Cloud → Settings → Secrets
+   - Update `GPU_API_ENDPOINT`:
+     ```toml
+     GPU_API_ENDPOINT = "https://xxxxx.trycloudflare.com"
+     ```
+   - Save and wait ~1 minute for changes to propagate
 
-**Option C: Configure Firewall on GPU Server**
-```bash
-# Allow port 5000
-ufw allow 5000/tcp
-# Or if using iptables
-iptables -A INPUT -p tcp --dport 5000 -j ACCEPT
+5. **Verify tunnel is working:**
+   ```bash
+   # Test from your local machine
+   curl https://xxxxx.trycloudflare.com/health
+   ```
 
-# Check if port is listening
-netstat -tuln | grep 5000
-# Or
-ss -tuln | grep 5000
+**Why Tunnels?**
+- Vast.ai instances don't have public IPs accessible from outside
+- Tunnels create a secure HTTPS endpoint that works from anywhere
+- No need to configure firewall or port forwarding manually
+- Automatically handles SSL/TLS
+
+**Alternative: Direct IP (may not work)**
+If you want to try direct IP (usually won't work due to firewall):
+```toml
+GPU_API_ENDPOINT = "http://143.55.45.86:5000"
 ```
-
-**Option D: Use Vast.ai Public IP (if available)**
-Some vast.ai instances have public IPs. Check your instance settings for:
-- Public IP address
-- Port forwarding configuration
-- Firewall rules
+But this will likely timeout because the instance is behind NAT/firewall.
 
 ---
 
