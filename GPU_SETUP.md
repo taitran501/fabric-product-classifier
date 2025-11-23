@@ -19,12 +19,16 @@ ssh -p 21569 root@ssh9.vast.ai -L 8080:localhost:8080
 
 **Streamlit Cloud Secrets (TOML format):**
 ```toml
-# Option 1: Using Tunnel URL (RECOMMENDED - works from anywhere)
+# REQUIRED: Use Tunnel URL from vast.ai Tunnels feature
+# Format: https://xxxxx.trycloudflare.com
 GPU_API_ENDPOINT = "https://your-tunnel-url.trycloudflare.com"
-
-# Option 2: Direct IP (may not work due to firewall)
-GPU_API_ENDPOINT = "http://143.55.45.86:5000"
 ```
+
+**Important:**
+- ⚠️ **MUST use Tunnel URL** - Direct IP will NOT work (firewall/NAT)
+- Use **HTTPS** (not HTTP)
+- No port number needed in URL
+- Get tunnel URL from vast.ai dashboard → Tunnels section
 
 **Important Notes:**
 - Use TOML format in Streamlit Cloud Secrets (see https://toml.io/en/v1.0.0)
