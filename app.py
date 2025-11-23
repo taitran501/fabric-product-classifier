@@ -170,10 +170,21 @@ def predict_batch_api(texts, api_endpoint, progress_callback=None):
                 processed = len(predictions)
                 progress_callback(progress, chunk_idx + 1, total_chunks, processed, total)
         
-        except requests.exceptions.RequestException as e:
-            error_msg = f"Error calling GPU API: {str(e)}"
+        except requests.exceptions.ConnectTimeout:
+            error_msg = "GPU API connection timeout"
             st.error(f"❌ {error_msg}")
             raise Exception(error_msg)
+        except requests.exceptions.ConnectionError:
+            error_msg = "GPU API connection failed - check if server is running and accessible"
+            st.error(f"❌ {error_msg}")
+            raise Exception(error_msg)
+        except requests.exceptions.RequestException as e:
+            # Hide IP addresses from error messages
+            import re
+            error_msg = str(e)
+            error_msg = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP_HIDDEN]', error_msg)
+            st.error(f"❌ Error calling GPU API: {error_msg}")
+            raise Exception(f"GPU API error: {error_msg}")
     
     return predictions
 
