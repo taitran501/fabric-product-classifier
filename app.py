@@ -199,19 +199,14 @@ def predict_batch(texts, tokenizer, model, batch_size=32, progress_callback=None
             # Test API connection first
             health_response = requests.get(f"{gpu_api_endpoint}/health", timeout=5)
             if health_response.status_code == 200:
-                st.info("🚀 Using GPU acceleration")
+                # Silently use GPU - no message to users
                 return predict_batch_api(texts, gpu_api_endpoint, progress_callback)
             else:
-                st.warning("⚠️ GPU API not responding, falling back to CPU")
-        except requests.exceptions.ConnectTimeout:
-            st.warning("⚠️ GPU API connection timeout, falling back to CPU")
-        except requests.exceptions.ConnectionError:
-            st.warning("⚠️ GPU API connection failed, falling back to CPU")
-        except Exception as e:
-            # Hide sensitive information (IP addresses) from error messages
-            import re
-            error_msg = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP_HIDDEN]', str(e))
-            st.warning("⚠️ GPU API unavailable, falling back to CPU")
+                # Silently fallback to CPU
+                pass
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError, Exception):
+            # Silently fallback to CPU - don't show errors to users
+            pass
     
     # Fallback to local model (CPU) - model must be loaded
     if model is None or tokenizer is None:
